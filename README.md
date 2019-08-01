@@ -4,7 +4,7 @@
 
 One to two paragraph statement about your product and what it does.
 
-![](esdc-org-chart.png)
+![](esdc-org-chart.PNG)
 
 ## Installation
 
