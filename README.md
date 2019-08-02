@@ -1,9 +1,6 @@
 # Government of Canada Employee Directorate Viewer
 > The [Government Electronic Directory Services (GEDS)](http://gcdirectory-gcannuaire.ssc-spc.gc.ca/en/GCD/?pgid=009) provides public access to Government of Canada employee contact information as provided by participating departments. The dataset underlying GEDS has been published [here](https://open.canada.ca/data/en/dataset/8ec4a9df-b76b-4a67-8f93-cdbc2e040098) on the Government of Canada's [Open Data](https://open.canada.ca/en/open-data) portal. The purpose of this project is to use this data to produce a searchable organization chart for the Government of Canada. 
 
-
-One to two paragraph statement about your product and what it does.
-
 ![](esdc-org-chart.PNG)
 
 ## Installation
