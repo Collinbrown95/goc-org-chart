@@ -126,3 +126,6 @@ dmypy.json
 # csv
 *.csv
 config.py
+
+# Project specific
+settings.json

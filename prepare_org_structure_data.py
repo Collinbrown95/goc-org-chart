@@ -104,7 +104,7 @@ def main():
     """
     tree = ctree()
     
-    for rid, row in unique_df.iterrows():
+    for _, row in unique_df.iterrows():
         # usage of python magic to construct dynamic tree structure and
         # basically grouping csv values under their parents
         leaf = tree[row[1]]

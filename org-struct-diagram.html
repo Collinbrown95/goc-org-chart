@@ -6,7 +6,7 @@
     <title>Org Chart</title>
 
     <style>
-  
+
   .node {
     cursor: pointer;
   }
@@ -27,14 +27,26 @@
     stroke: #ccc;
     stroke-width: 1px;
   }
-  
+
+  div.tooltip {
+      position: absolute;
+      text-align: center;
+      width: 100px;
+      height: 60px;
+      padding: 2px;
+      font: 10px sans-serif;
+      background: lightsteelblue;
+      border: 0px;
+      border-radius: 8px;
+      pointer-events: none;
+  }
     </style>
 
   </head>
 
   <body>
 <h1>ESDC Organization Chart</h1>
-<!-- load the d3.js library --> 
+<!-- load the d3.js library -->
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <!-- load the org.json file -->
 <script type="text/javascript" src="new_org_struc.json"></script>
@@ -44,7 +56,7 @@
 var margin = {top: 20, right: 120, bottom: 20, left: 250},
   width = 4000 - margin.right - margin.left,
   height = 1100 - margin.top - margin.bottom;
-  
+
 var i = 0,
   duration = 750,
   root;
@@ -167,6 +179,12 @@ function update(source) {
   d.x0 = d.x;
   d.y0 = d.y;
   });
+
+  // register event handlers for mouseover and mouseout
+  // variables to keep track of pre-hover attributes
+  d3.selectAll("circle")
+        .on("mouseover", handleMouseOver)
+        .on("mouseout", handleMouseOut);
 }
 
 // Toggle children on click.
@@ -180,6 +198,50 @@ function click(d) {
   }
   update(d);
 }
+
+
+// Setup tooltip for d3
+var div = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
+
+// Create Event Handlers for mouse
+function handleMouseOver(d, i) {  // Add interactivity
+      oldRadius = d3.select(this).style("r");
+      // Use D3 to select element, change color and size
+      d3.select(this).transition().attr({
+        r: 20
+      });
+      div.transition()
+               .duration(200)
+               .style("opacity", .9);
+      div.html("John Doe" + "<br/>"  + "Director")
+         .style("left", (d3.event.pageX) + "px")
+         .style("top", (d3.event.pageY - 28) + "px");
+
+
+      // Specify where to put label of text
+      // svg.append("text").attr({
+      //    id: "t" + d.x + "-" + d.y + "-" + i,  // Create an id for text so we can select it later for removing on mouseout
+      //     x: function() { return xScale(d.x) - 30; },
+      //     y: function() { return yScale(d.y) - 15; }
+      // })
+      // .text(function() {
+      //   return [d.x, d.y];  // Value of the text
+      // });
+    }
+
+function handleMouseOut(d, i) {
+      // Use D3 to select element, change color back to normal
+      d3.select(this).transition().attr({
+        r: oldRadius
+      });
+      div.transition()
+                .duration(500)
+                .style("opacity", 0);
+      // Select text by id and then remove
+      // d3.select("#t" + d.x + "-" + d.y + "-" + i).remove();  // Remove text location
+    }
 
 // Function to get the path to a specific node
 function getPathToNode(val, rootNode) {
@@ -262,6 +324,6 @@ function wrap(text, width) {
 }
 
 </script>
-  
+
   </body>
 </html>
