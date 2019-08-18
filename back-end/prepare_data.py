@@ -9,18 +9,43 @@ names to business units and (ii) a JSON object that contains the organization
 chart.
 '''
 
-from utils import fetch_geds, get_business_unit
+from utils import fetch_geds, get_business_unit, get_org_chart
 
 from config import CONFIG
 
-# Step 1: get a dataframe from the pandas url. Note that if one wants to
-# build the org chart tool for only a subset of the data (e.g. ESDC-specific),
-# this is toggled by setting the "subset" parameter below to the acronym found 
-# in the "Department Acronym" field in the geds dataframe (e.g. "ESDC-EDSC")
-df = fetch_geds(CONFIG["geds-url"], subset=None)
+def prepare_data(subset=None):
+    '''
+    This funcion extracts geds data from open.canada.ca/data and processes it
+    into (1) a csv file that contains the business unit that each person 
+    belongs to and (2) a json file that contains the org chart.
 
-# Step 2: for each person in geds, get the business unit they belong to
-df = get_business_unit(df)
+    Args:
+        subset:
+            A string containing the acronym found in the "Department Acronym"
+            field in the geds dataframe (e.g. "ESDC-EDSC") - used to build the
+            org chart tool for only a subset of geds.
+    Returns:
+        (df, org_chart):
+            A two-tuple containing the dataframe augmented with the business unit
+            that each person belongs to and a dict-like object containing the org
+            chart.
+    '''
+    # Step 1: get a dataframe from the geds url. Note that if one wants to
+    # build the org chart tool for only a subset of the data (e.g. ESDC-specific),
+    # this is toggled by setting the "subset" parameter below to the acronym found 
+    # in the "Department Acronym" field in the geds dataframe (e.g. "ESDC-EDSC")
+    df = fetch_geds(CONFIG["geds-url"], subset=subset)
 
-# Step 3: get the org chart for geds
-org_chart = get_org_chart(df, tree_depth=7)
+    # Step 2: Pre-process searchable fields - need to do things like lowercase
+    # name fields, strip extra whitespaces, etc.
+    # Step 3: get the org chart for geds
+    org_chart = get_org_chart(df, tree_depth=7)
+    return df, org_chart
+
+if __name__ == "__main__":
+    df, org_chart = prepare_data(subset="ESDC-EDSC")
+    # Save each of these files to disk temporarily
+    df.to_csv(CONFIG["df-path"])
+    import json
+    with open (CONFIG["org-chart-path"], 'w') as f:
+        json.dump(org_chart,f)

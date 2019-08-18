@@ -129,3 +129,6 @@ config.py
 
 # Project specific
 settings.json
+org-chart.json
+contact-info.csv
+old/

@@ -6,6 +6,8 @@ import pandas as pd
 from urllib.request import urlopen
 from zipfile import ZipFile
 
+from config import CONFIG
+
 
 def fetch_geds(url, subset=None):
     '''
@@ -34,36 +36,20 @@ def fetch_geds(url, subset=None):
     # Note that zipped_file.namelist() returns ['gedsOpenData.csv'], so
     # zipped_file.namelist()[0] returns the file name
     for idx, line in enumerate(zipped_file.open(zipped_file.namelist()[0]).readlines()):
-        lines.append(line.decode('utf-8'))
+        # Need to use the csv module to read the string returned by line.decode()
+        # Reason is csv module contains the logic to parse commas that are
+        # contained within double quotes.
+        decoded = [str(line.decode('ISO-8859-1'))]
+        line = [item for item in csv.reader(decoded)][0]
+        # There are a few observations (~90) that are not parsed correctly - this
+        # needs to be investigated further.
+        if len(line) == 44:
+            lines.append(line)
     # Convert to pandas dataframe
     df = pd.DataFrame(lines[1:], columns=lines[0])
-    return df
-
-def get_business_unit(df):
-    '''
-    Extracts the business unit that each person in geds belongs to.
-
-    Args:
-        df:
-            A pandas dataframe containing the contents of the csv file
-            loaded directly from geds.
-    
-    Returns:
-        df:
-            A pandas dataframe that has an additional column called
-            "business-unit" that contains the business unit that each
-            person belongs to.
-    '''
-    # Preprocess text in "Organization Structure (EN)"
-    df["business-unit"] = df["Organization Structure (EN)"].str.replace('\(.*?\)', '')
-    # For each row, convert "Organization Structure (EN)" into a list
-    # of where the person fits into the org chart.
-    df["business-unit"] = df["business-unit"].str.split(" :", n=-1, expand=False)
-    # We want to get the business unit that each person belongs to, so we need to
-    # return the last element of each list. Note that there appears to be a blank
-    # space after some business units, which is why .str.rstrip() gets chained
-    # onto this.
-    df["business-unit"] = df["business-unit"].apply(lambda x: x[-1]).str.rstrip()
+    # Select a subset of the dataframe (if any)
+    if subset is not None:
+        df = df[df["Department Acronym"] == subset]
     return df
 
 def get_org_chart(df, tree_depth=7):
@@ -89,7 +75,7 @@ def get_org_chart(df, tree_depth=7):
     # Keep only the "Organization Structure (EN)" column of the dataframe;
     # drop duplicates because we only want each entry to appear once;
     # preprocess the text in teh column.
-    org_struc = df[['Organization Structure (EN)']].drop_duplicates().str.replace('\(.*?\)', '')
+    org_struc = df['Organization Structure (EN)'].str.replace('\(.*?\)', '').drop_duplicates()
     # Split the above series into `tree_depth` different columns
     org_struc = org_struc.str.split(" :", n=-1, expand=True)
     columns = [i for i in range(0, tree_depth + 1, 1)]
