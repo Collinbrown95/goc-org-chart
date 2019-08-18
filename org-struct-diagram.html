@@ -4,9 +4,68 @@
     <meta charset="utf-8">
 
     <title>Org Chart</title>
+  <!-- Styles for modal window results-->
+  <style>
+    .modal-header {
+      font-size: 21px;
+    }
+    .resultItem {
+      display: flex;
+      justify-content: space-around;
+      padding: 4px;
+      margin: 4px;
+      border: 0.5px solid rgb(255, 255, 255);
+      border-radius: 10px;
+      background: #fafafa;	
+    }
 
+    .group1 {
+      display:flex;
+      flex-direction:column;
+      margin: 2px;
+    }
+    .contactInfo {
+      display: flex;
+    }
+    .emailItem p {
+      font-family: Arial;
+      color:rgb(6,69,173);
+      margin: 5px;
+    }
+    .phoneItem p {
+      margin: 5px;
+      font-family: Arial;
+    }
+    .addressInfo {
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .titleItem {
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .nameItem {
+      margin: 4px;
+    }
+    .nameItem h1{
+      font-size: 18px;
+      font-family: Arial;
+    }
+
+    .addressItem {
+      margin: 4px;
+    }
+    .addressItem p {
+      font-family: Arial;
+      font-size: 14px;
+    }
+  </style>
     <style>
-  
+
   .node {
     cursor: pointer;
   }
@@ -27,24 +86,54 @@
     stroke: #ccc;
     stroke-width: 1px;
   }
-  
-    </style>
 
+  div.tooltip {
+    position: absolute;			
+    text-align: left;			
+	  white-space: normal;					
+    padding: 4px;				
+    font-size: 14px;		
+    background: #ffffff;	
+    border: 0px solid rgb(255, 255, 255);
+    border-radius: 10px;
+  }
+
+    </style>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
   </head>
 
   <body>
-<h1>ESDC Organization Chart</h1>
-<!-- load the d3.js library --> 
+<!-- Search form -->
+<h1>ESDC Interactive Organizational Chart</h1>
+<input id="search-bar" class="form-control" type="text" placeholder="Search" aria-label="Search">
+<!-- load the d3.js library -->
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <!-- load the org.json file -->
 <script type="text/javascript" src="new_org_struc.json"></script>
+
+<script>
+document.getElementById("search-bar").addEventListener("keyup", function(event){
+// If user presses enter, then start by searching the org chart
+if (event.keyCode === 13) {
+  // TODO: Make the org chart reset with every search, so the user doesn't have to
+  // do this manually.
+  // Get the user's search term
+  searchTerm = document.getElementById("search-bar").value
+  expandToNode(searchTerm);
+  update(root);
+}
+});
+</script>
+
 <script>
 
 // ************** Generate the tree diagram  *****************
 var margin = {top: 20, right: 120, bottom: 20, left: 250},
   width = 4000 - margin.right - margin.left,
   height = 1100 - margin.top - margin.bottom;
-  
+
 var i = 0,
   duration = 750,
   root;
@@ -167,6 +256,12 @@ function update(source) {
   d.x0 = d.x;
   d.y0 = d.y;
   });
+
+  // register event handlers for mouseover and mouseout
+  // variables to keep track of pre-hover attributes
+  d3.selectAll("circle")
+        .on("mouseover", handleMouseOver)
+        .on("mouseout", handleMouseOut);
 }
 
 // Toggle children on click.
@@ -180,6 +275,115 @@ function click(d) {
   }
   update(d);
 }
+
+
+// Setup tooltip for d3
+var tooltip = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
+
+// Create Event Handlers for mouse
+function handleMouseOver(d, i) {  // Add interactivity
+      oldRadius = d3.select(this).style("r");
+      // Get an array of <tspan> tags (text is always the second property)
+      textList = this.parentElement.childNodes[1].childNodes
+      // Need to concatenate the text in the <tspan> tags to construct the name
+      // of the business unit
+      var businessUnit = ""
+      for (var i = 0; i < textList.length; i++) {
+        if (i === 0) {
+          businessUnit = textList[0].innerHTML
+        }
+        if (i > 0) {
+          businessUnit = businessUnit + " " + textList[i].innerHTML
+        }
+      }
+      //tSpanList = textContent.childNodes
+      //console.log(tSpanList)
+      // Use D3 to select element, change color and size
+      d3.select(this).transition().attr({
+        r: 20
+      });
+      tooltip.transition()
+               .duration(500)
+               .style("opacity", .9);
+      tooltip.html("<button id='but1' type='button' class='btn btn-info btn-lg' data-toggle='modal' data-target='#myModal'>See the team</button>")
+      .style('top', d3.event.pageY - 10 + 'px')
+	    .style('left', d3.event.pageX + 10 + 'px')
+	    .style("opacity", 1);
+      // Update the content of the modal window
+	    d3.select("#but1").on("click", function(bu = businessUnit){
+        $(".modal-header").html(bu)
+        var teamJson;
+        // TODO: enter AJAX request to back-end here
+        teamJson = [
+                    {
+                        "Surname": "Doe",
+                        "GivenName": "John",
+                        "Title": "Data and Statistical Anlysis Officer",
+                        "Telephone Number": "999-999-9999",
+                        "Email": "john.doe@canada.ca",
+                        "Street Address (EN)": "999 Some Address Blvd.",
+                        "Country (EN)": "Canada",
+                        "Province (EN)": "Quebec",
+                        "Postal Code": "A1A 1A1",
+                    }, 
+                    {"Surname": "Doe",
+                     "GivenName": "Jane",
+                     "Title": "Team Leader Coresp Mgmt",
+                     "Telephone Number": "555-555-5555",
+                     "Email": "jane.doe@canada.ca",
+                     "Street Address (EN)": "4334 Different Address Ave.",
+                     "Country (EN)": "Canada",
+                     "Province (EN)": "Ontario",
+                     "Postal Code": "V9V 9V9",
+                    }
+                  ]
+        var bodyHtml = "";
+        bodyHtml += "<div class='d-inline-flex p-2'>"
+        for(var i = 0; i < teamJson.length; i++){
+         bodyHtml += generateBodyTemplate(teamJson[i])
+        }
+        bodyHtml += "</div>"
+        $(".modal-body").html(bodyHtml)
+      });
+}
+// A convenience function to generate a row of the modal window
+function generateBodyTemplate(bodyContactObj) {
+  innerHtml = "<div class='resultItem'>"
+    innerHtml += "<div class='group1'>"
+      innerHtml += "<div class='titleItem'>"
+        innerHtml += "<div class='nameItem'><h1>" + bodyContactObj["GivenName"] + " " + bodyContactObj["Surname"] + ":</h1></div>"
+        innerHtml += "<div class='nameItem'><h1>" + bodyContactObj["Title"] + "</h1></div>"
+      innerHtml += "</div>"
+      innerHtml += "<div class='contactInfo'>"
+        innerHtml += "<div class='emailItem'><p>" + bodyContactObj["Email"] + "</p></div>"
+        innerHtml += "<div class='phoneItem'><p>" + bodyContactObj["Telephone Number"] + "</p></div>"
+      innerHtml += "</div>"
+    innerHtml += "</div>"
+    // Group address-related info together
+    innerHtml += "<div class='addressInfo'>"
+      innerHtml += "<div class='addressItem'><p>" + bodyContactObj["Street Address (EN)"] + ",</p></div>"
+      innerHtml += "<div class='addressItem'><p>" + bodyContactObj["Postal Code"] + "</p></div>"
+      innerHtml += "<div class='addressItem'><p>(" + bodyContactObj["Province (EN)"] + ",</p></div>"
+      innerHtml += "<div class='addressItem'><p>" + bodyContactObj["Country (EN)"] + ")</p></div>"
+      
+      innerHtml += "</div>"
+  innerHtml += "</div>"
+  return innerHtml
+}
+
+function handleMouseOut(d, i) {
+      // Use D3 to select element, change color back to normal
+      d3.select(this).transition().attr({
+        r: oldRadius
+      });
+      tooltip.transition()
+                .duration(1500)
+                .style("opacity", 0);
+      // Select text by id and then remove
+      // d3.select("#t" + d.x + "-" + d.y + "-" + i).remove();  // Remove text location
+    }
 
 // Function to get the path to a specific node
 function getPathToNode(val, rootNode) {
@@ -262,6 +466,24 @@ function wrap(text, width) {
 }
 
 </script>
-  
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" role="dialog">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Modal Header</h4>
+      </div>
+      <div class="modal-body">
+        <p>This is a large modal.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
   </body>
 </html>
