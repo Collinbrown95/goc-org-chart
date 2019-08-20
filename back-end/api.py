@@ -4,8 +4,10 @@ Created on Mon Aug 12 21:38 2019
 @author: collinbrown
 '''
 import json
+import sqlite3
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
+
 import pandas as pd
 
 from config import CONFIG
@@ -71,7 +73,7 @@ def search_person(df, person_name, language):
     raise NotImplementedError
 
 @app.route('/search-team', methods=["GET"])
-def search_team(language):
+def search_team():
     '''
     Searches for all of the members who belong to a particular organizational
     unit.
@@ -80,12 +82,52 @@ def search_team(language):
         language:
             A string containing "en" or "fr" to respectively retrieve the
             content in either english or french.
+        team_name:
+            A string containing the name of the unit that we want to retrieve
+            the contact info for.
     
     Returns:
         team_json:
             A list of dicts that contain the team's contact information.
     '''
-    raise NotImplementedError
+    language="en"
+    import sys
+    if language == "en":
+        # Establish SQLite connection 
+        conn = sqlite3.connect(CONFIG["db-path"])
+        cursor = conn.cursor()
+        json_response = []
+        var = (str(request.args.get("team_name")),)
+        print(var)
+        for row in cursor.execute("""SELECT Surname, GivenName, `Title (EN)`, 
+                            `Telephone Number`, Email, `Street Address (EN)`, 
+                            `Country (EN)`, `Province (EN)`, `Postal Code` 
+                            FROM contacts WHERE `Organization Name (EN)` 
+                            = ?""", var):
+            print(row)
+            json_response.append(
+                {
+                    "Surname": row[0],
+                    "GivenName": row[1],
+                    "Title (EN)": row[2],
+                    "Telephone Number": row[3],
+                    "Email": row[4],
+                    "Street Address (EN)": row[5],
+                    "Country (EN)": row[6],
+                    "Province (EN)": row[7],
+                    "Postal Code": row[8]
+                }
+            )
+        sys.stdout.flush()
+        return jsonify(json_response)
 
+
+    elif language == "fr":
+        # TODO: add this feature in French
+        raise NotImplementedError
+    else:
+        # TODO: write a custom exception for this
+        print("Can only pass 'en' or 'fr' as arguments")
+        
 if __name__ == "__main__":
     app.run()

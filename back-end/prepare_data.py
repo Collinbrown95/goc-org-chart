@@ -9,7 +9,7 @@ names to business units and (ii) a JSON object that contains the organization
 chart.
 '''
 
-from utils import fetch_geds, get_business_unit, get_org_chart
+from utils import fetch_geds, get_org_chart
 
 from config import CONFIG
 
@@ -45,7 +45,14 @@ def prepare_data(subset=None):
 if __name__ == "__main__":
     df, org_chart = prepare_data(subset="ESDC-EDSC")
     # Save each of these files to disk temporarily
-    df.to_csv(CONFIG["df-path"])
+    import sqlite3
+    # Connect to sqlite3 database
+    conn = sqlite3.connect(CONFIG["db-path"])
+    # Dump the pandas dataframe into the "contacts" table of the db - if
+    # the table already exists, replace it (i.e. drop the table before
+    # inserting new rows)
+    df.to_sql('contacts', con=conn, if_exists="replace")
+    # Write the org chart to disk as JSON
     import json
     with open (CONFIG["org-chart-path"], 'w') as f:
         json.dump(org_chart,f)
