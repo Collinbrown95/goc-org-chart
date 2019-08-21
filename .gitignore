@@ -127,10 +127,17 @@ dmypy.json
 *.csv
 config.py
 
-# Project specific
+# Project specific - back-end
 settings.json
 org-chart.json
 contact-info.csv
 tests.py
 old/
 data/
+
+# Proejct specific - front-end
+config.js
+package-lock.json
+node_modules/
+fonts/
+external/

@@ -111,7 +111,7 @@
 <!-- load the d3.js library -->
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <!-- load the org.json file -->
-<script type="text/javascript" src="new_org_struc.json"></script>
+<script type="text/javascript" src="../javascripts/new_org_struc.json"></script>
 
 <script>
 document.getElementById("search-bar").addEventListener("keyup", function(event){
@@ -301,9 +301,9 @@ function handleMouseOver(d, i) {  // Add interactivity
       //tSpanList = textContent.childNodes
       //console.log(tSpanList)
       // Use D3 to select element, change color and size
-      d3.select(this).transition().attr({
-        r: 20
-      });
+      // d3.select(this).transition().attr({
+      //   r: 10
+      // });
       tooltip.transition()
                .duration(500)
                .style("opacity", .9);
@@ -314,58 +314,25 @@ function handleMouseOver(d, i) {  // Add interactivity
       // Update the content of the modal window
 	    d3.select("#but1").on("click", function(bu = businessUnit){
         $(".modal-header").html(bu)
-        var teamJson;
         // TODO: enter AJAX request to back-end here
         var settings = {
-          "async": true,
-          "crossDomain": true,
-          "url": "http://localhost:5000/search-team?team_name=Data%20Science",
+          "url": "/search-team?team_name=" + bu,
           "method": "GET",
-          "headers": {
-            "User-Agent": "PostmanRuntime/7.11.0",
-            "Accept": "*/*",
-            "Host": "localhost:5000",
-            "cookie": "connect.sid=s%3Aap098XDnq4zhudMUtjoQgPmI3YHHtwMP.6RX9dZAFkX3tqjuwdvQ4sNBQdBUOdhyjziKrwB9wQuM",
-            "accept-encoding": "gzip, deflate",
-            "Connection": "keep-alive",
-            "cache-control": "no-cache",
-            "Postman-Token": "ed12390f-9c4a-41e9-93b6-7ffd0cd906a2"
-          }
         }
-
+        console.log(settings);
         $.ajax(settings).done(function (response) {
-          console.log(response);
+          var teamJson = JSON.parse(response.body);
+          console.log(teamJson);
+          console.log(teamJson.length);
+          var bodyHtml = "";
+          bodyHtml += "<div class='d-inline-flex p-2'>"
+          for(var i = 0; i < teamJson.length; i++){
+            bodyHtml += generateBodyTemplate(teamJson[i])
+          }
+          bodyHtml += "</div>"
+          $(".modal-body").html(bodyHtml);
+          console.log(bodyHtml)
         });
-        teamJson = [
-                    {
-                        "Surname": "Doe",
-                        "GivenName": "John",
-                        "Title": "Data and Statistical Anlysis Officer",
-                        "Telephone Number": "999-999-9999",
-                        "Email": "john.doe@canada.ca",
-                        "Street Address (EN)": "999 Some Address Blvd.",
-                        "Country (EN)": "Canada",
-                        "Province (EN)": "Quebec",
-                        "Postal Code": "A1A 1A1",
-                    }, 
-                    {"Surname": "Doe",
-                     "GivenName": "Jane",
-                     "Title": "Team Leader Coresp Mgmt",
-                     "Telephone Number": "555-555-5555",
-                     "Email": "jane.doe@canada.ca",
-                     "Street Address (EN)": "4334 Different Address Ave.",
-                     "Country (EN)": "Canada",
-                     "Province (EN)": "Ontario",
-                     "Postal Code": "V9V 9V9",
-                    }
-                  ]
-        var bodyHtml = "";
-        bodyHtml += "<div class='d-inline-flex p-2'>"
-        for(var i = 0; i < teamJson.length; i++){
-         bodyHtml += generateBodyTemplate(teamJson[i])
-        }
-        bodyHtml += "</div>"
-        $(".modal-body").html(bodyHtml)
       });
 }
 // A convenience function to generate a row of the modal window
@@ -374,7 +341,7 @@ function generateBodyTemplate(bodyContactObj) {
     innerHtml += "<div class='group1'>"
       innerHtml += "<div class='titleItem'>"
         innerHtml += "<div class='nameItem'><h1>" + bodyContactObj["GivenName"] + " " + bodyContactObj["Surname"] + ":</h1></div>"
-        innerHtml += "<div class='nameItem'><h1>" + bodyContactObj["Title"] + "</h1></div>"
+        innerHtml += "<div class='nameItem'><h1>" + bodyContactObj["Title (EN)"] + "</h1></div>"
       innerHtml += "</div>"
       innerHtml += "<div class='contactInfo'>"
         innerHtml += "<div class='emailItem'><p>" + bodyContactObj["Email"] + "</p></div>"
@@ -387,7 +354,6 @@ function generateBodyTemplate(bodyContactObj) {
       innerHtml += "<div class='addressItem'><p>" + bodyContactObj["Postal Code"] + "</p></div>"
       innerHtml += "<div class='addressItem'><p>(" + bodyContactObj["Province (EN)"] + ",</p></div>"
       innerHtml += "<div class='addressItem'><p>" + bodyContactObj["Country (EN)"] + ")</p></div>"
-      
       innerHtml += "</div>"
   innerHtml += "</div>"
   return innerHtml
@@ -395,9 +361,9 @@ function generateBodyTemplate(bodyContactObj) {
 
 function handleMouseOut(d, i) {
       // Use D3 to select element, change color back to normal
-      d3.select(this).transition().attr({
-        r: oldRadius
-      });
+      // d3.select(this).transition().attr({
+      //   r: oldRadius
+      // });
       tooltip.transition()
                 .duration(1500)
                 .style("opacity", 0);
