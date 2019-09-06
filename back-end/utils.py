@@ -52,6 +52,61 @@ def fetch_geds(url, subset=None):
         df = df[df["Department Acronym"] == subset]
     return df
 
+def preprocess_geds(df):
+    '''
+    Applies a few regular expressions to the fields that will be used in
+    downstream table lookup operations. Creates new searchable fields that
+    will be more robust to variations in characters, casing, etc.
+    
+    Specifically, the organization name:
+        1. all characters are converted to lowercase
+        2. replace ,.- characters with a blank space
+        3. replace the & character with 'and'
+        4. any occurence of two spaces should be replaced with a single space
+        5. the text should be stripped of trailing spaces/characters on either side
+    
+    For peoples' names:
+        1. convert to lowercase
+        2. create three searchable fields - firstName, lastName, fullName
+        3. strip trailing characters on either side of the name
+    Args:
+        df:
+            A pandas dataframe containing the original contents of the zipped
+            csv file.
+    
+    Returns:
+        df:
+            The same pandas dataframe that was input, but augmented with
+            normalized column values.
+    '''
+    # `Organization Name (EN)`
+    df["OrgNameCleanEN"] = df["Organization Name (EN)"].str.lower()
+    df["OrgNameCleanEN"] = df["OrgNameCleanEN"].str.replace(',', ' ')
+    df["OrgNameCleanEN"] = df["OrgNameCleanEN"].str.replace('/', ' ')
+    df["OrgNameCleanEN"] = df["OrgNameCleanEN"].str.replace('.', ' ')
+    df["OrgNameCleanEN"] = df["OrgNameCleanEN"].str.replace('-', ' ')
+    df["OrgNameCleanEN"] = df["OrgNameCleanEN"].str.replace('&', ' and ')
+    df["OrgNameCleanEN"] = df["OrgNameCleanEN"].str.replace(' +', ' ')
+    df["OrgNameCleanEN"] = df["OrgNameCleanEN"].str.strip()
+
+    # `Organization Name (FR)`
+    df["OrgNameCleanFR"] = df["Organization Name (FR)"].str.lower()
+    df["OrgNameCleanFR"] = df["OrgNameCleanFR"].str.replace(',', ' ')
+    df["OrgNameCleanFR"] = df["OrgNameCleanFR"].str.replace('/', ' ')
+    df["OrgNameCleanFR"] = df["OrgNameCleanFR"].str.replace('.', ' ')
+    df["OrgNameCleanFR"] = df["OrgNameCleanFR"].str.replace('-', ' ')
+    df["OrgNameCleanFR"] = df["OrgNameCleanFR"].str.replace('&', ' et ')
+    df["OrgNameCleanFR"] = df["OrgNameCleanFR"].str.replace(' +', ' ')
+    df["OrgNameCleanFR"] = df["OrgNameCleanFR"].str.strip()
+
+    # Create three normalized columns: firstName, lastName, fullName
+    df["firstName"] = df["GivenName"].str.lower()
+    df["firstName"] = df["firstName"].str.strip()
+    df["lastName"] = df["Surname"].str.lower()
+    df["lastName"] = df["lastName"].str.strip()
+    df["fullName"] = df["firstName"] + " " + df["lastName"]
+    return df
+
 def get_org_chart(df, tree_depth=7):
     '''
     Constructs a dict-like object from the geds dataframe that contains the
@@ -182,3 +237,66 @@ def flat_to_hierarchical(df):
     for name, leaf in tree.items():
         res.append(build_leaf(name, leaf))
     return res
+
+#==============================================================================
+# Misc. API utility functions
+#==============================================================================
+
+def normalize_team_name(team_name):
+    '''
+    Applies regular expressions to account for common variations that
+    someone may use to request a team name.
+
+    Specifically:
+        1. all characters are converted to lowercase
+        2. replace ,.- characters with a blank space
+        3. replace the & character with 'and'
+        4. any occurence of two spaces should be replaced with a single space
+        5. the text should be stripped of trailing spaces/characters on either side
+
+    Args:
+        team_name:
+            A string containing the team name that is requested.
+    
+    Returns:
+        team_name:
+
+    '''
+    return team_name
+    # team_name = str(team_name)
+    # team_name = team_name.lower()
+    # team_name = team_name.replace(',', ' ')
+    # team_name = team_name.replace('/', ' ')
+    # team_name = team_name.replace('.', ' ')
+    # team_name = team_name.replace('-', ' ')
+    # team_name = team_name.replace('&', ' and ')
+    # team_name = team_name.replace(' +', ' ')
+    # team_name = team_name.strip()
+    # return team_name
+
+def normalize_person_name(person_name):
+    '''
+    Applies regular expressions to account for common variations that
+    someone may use to request a person's name.
+
+    Specifically:
+        1. all characters are converted to lowercase
+        2. replace ,. characters with a blank space
+        4. any occurence of two spaces should be replaced with a single space
+        5. the text should be stripped of trailing spaces/characters on either side
+
+    Args:
+        person_name:
+            A string containing the team name that is requested.
+    
+    Returns:
+        person_name:
+    '''
+    person_name = str(person_name)
+    person_name = person_name.lower()
+    person_name = person_name.replace(","," ")
+    person_name = person_name.replace("."," ")
+    # Replace one or more spaces with one space
+    person_name = person_name.replace(" +"," ")
+    person_name = person_name.strip()
+    return person_name

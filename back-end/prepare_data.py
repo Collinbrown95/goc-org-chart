@@ -9,7 +9,7 @@ names to business units and (ii) a JSON object that contains the organization
 chart.
 '''
 
-from utils import fetch_geds, get_org_chart
+from utils import fetch_geds, get_org_chart, preprocess_geds
 
 from config import CONFIG
 
@@ -38,6 +38,7 @@ def prepare_data(subset=None):
 
     # Step 2: Pre-process searchable fields - need to do things like lowercase
     # name fields, strip extra whitespaces, etc.
+    df = preprocess_geds(df)
     # Step 3: get the org chart for geds
     org_chart = get_org_chart(df, tree_depth=7)
     return df, org_chart
@@ -52,6 +53,7 @@ if __name__ == "__main__":
     # the table already exists, replace it (i.e. drop the table before
     # inserting new rows)
     df.to_sql('contacts', con=conn, if_exists="replace")
+    df.to_csv(CONFIG["df-path"])
     # Write the org chart to disk as JSON
     import json
     with open (CONFIG["org-chart-path"], 'w') as f:

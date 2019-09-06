@@ -3,6 +3,8 @@ Created on Mon Aug 12 21:38 2019
 
 @author: collinbrown
 '''
+import os
+import sys
 import json
 import sqlite3
 
@@ -12,6 +14,14 @@ import pandas as pd
 
 from config import CONFIG
 from search import search_contacts, search_org_chart
+from response_templates import (LANGUAGE_ERROR, 
+                               NO_TEAM_NAME_ERROR, 
+                               NO_LANG_ERROR,
+                               NO_PERSON_NAME_ERROR)
+from utils import normalize_team_name, normalize_person_name
+# Load org chart dict into memory
+with open(CONFIG["org-chart-path"], 'r') as f:
+    org_chart = json.load(f)[0]  # The JSON is a list of 1 object
 
 app = Flask(__name__)
 
@@ -20,7 +30,7 @@ def test():
     return "hello world!"
 
 @app.route('/search-org-chart', methods=["GET"])
-def search_org_chart(org_chart, org_name):
+def search_org_chart():
     '''
     Recursively searches the tree containing the organizational chart;
     if the business unit is found, then returns the path to the business unit.
@@ -34,10 +44,38 @@ def search_org_chart(org_chart, org_name):
     Returns:
         path:
     '''
-    raise NotImplementedError
+    # Open sqlite db connection
+    conn = sqlite3.connect(CONFIG["db-path"])
+    cursor = conn.cursor()
+    # If the lang parameter was not specified, return error to the client
+    if request.args.get("lang") is None:
+        return jsonify(NO_LANG_ERROR)
+    else:
+        lang = str(request.args.get("lang"))
+    
+    # If there was no search term return error to the client
+    if request.args.get("team_name") is None:
+        return jsonify(NO_TEAM_NAME_ERROR)
+    else:
+        # Normalize the requested team_name in case it contains 
+        # irregular characters/casing/etc.
+        team_name = str(request.args.get("team_name"))
+        team_name = normalize_team_name(team_name)
+        var = (team_name,)
+    if lang == "en":
+        # First, lookup `Organization Name (EN)` from OrgNameCleanEN
+        query_string = """SELECT `Organization Name (EN)`
+                       FROM contacts WHERE OrgNameCleanEN = ?"""
+        return jsonify(search_contacts(cursor, var, query_string))
+    elif lang == "fr":
+        # TODO: add this feature in French
+        raise NotImplementedError
+    else:
+        # Return response code 400 + message
+        return jsonify(LANGUAGE_ERROR)
 
 @app.route('/search-person', methods=["GET"])
-def search_person(df, person_name, language):
+def get_person():
     '''
     Searches the GEDS contacts table for a specific person.
 
@@ -70,10 +108,40 @@ def search_person(df, person_name, language):
         }
         If no match is found, returned result will be empty.
     '''
-    raise NotImplementedError
+    # Open sqlite db connection
+    conn = sqlite3.connect(CONFIG["db-path"])
+    cursor = conn.cursor()
+    # If the lang parameter was not specified, return error to the client
+    if request.args.get("lang") is None:
+        return jsonify(NO_LANG_ERROR)
+    else:
+        lang = str(request.args.get("lang"))
+    
+    # If there was no search term return error to the client
+    if request.args.get("person_name") is None:
+        return jsonify(NO_PERSON_NAME_ERROR)
+    else:
+        # Normalize the requested person_name in case it contains 
+        # irregular characters/casing/etc.
+        person_name = str(request.args.get("person_name"))
+        person_name = normalize_person_name(person_name)
+        var = (person_name,)
+    if lang == "en":
+        query_string = """SELECT Surname, GivenName, `Title (EN)`, 
+                       `Telephone Number`, Email, `Street Address (EN)`, 
+                       `Country (EN)`, `Province (EN)`, `Postal Code`,
+                       `Organization Name (EN)` FROM contacts WHERE fullName 
+                       = ?"""
+        return jsonify(search_contacts(cursor, var, query_string))
+    elif lang == "fr":
+        # TODO: add this feature in French
+        raise NotImplementedError
+    else:
+        # Return response code 400 + message
+        return jsonify(LANGUAGE_ERROR)
 
 @app.route('/search-team', methods=["GET"])
-def search_team():
+def get_team():
     '''
     Searches for all of the members who belong to a particular organizational
     unit.
@@ -90,44 +158,37 @@ def search_team():
         team_json:
             A list of dicts that contain the team's contact information.
     '''
-    language="en"
-    import sys
-    if language == "en":
-        # Establish SQLite connection 
-        conn = sqlite3.connect(CONFIG["db-path"])
-        cursor = conn.cursor()
-        json_response = []
-        var = (str(request.args.get("team_name")),)
-        print(var)
-        for row in cursor.execute("""SELECT Surname, GivenName, `Title (EN)`, 
-                            `Telephone Number`, Email, `Street Address (EN)`, 
-                            `Country (EN)`, `Province (EN)`, `Postal Code` 
-                            FROM contacts WHERE `Organization Name (EN)` 
-                            = ?""", var):
-            print(row)
-            json_response.append(
-                {
-                    "Surname": row[0],
-                    "GivenName": row[1],
-                    "Title (EN)": row[2],
-                    "Telephone Number": row[3],
-                    "Email": row[4],
-                    "Street Address (EN)": row[5],
-                    "Country (EN)": row[6],
-                    "Province (EN)": row[7],
-                    "Postal Code": row[8]
-                }
-            )
-        sys.stdout.flush()
-        return jsonify(json_response)
-
-
-    elif language == "fr":
+    # Open sqlite db connection
+    conn = sqlite3.connect(CONFIG["db-path"])
+    cursor = conn.cursor()
+    # If the lang parameter was not specified, return error to the client
+    if request.args.get("lang") is None:
+        return jsonify(NO_LANG_ERROR)
+    else:
+        lang = str(request.args.get("lang"))
+    
+    # If there was no search term return error to the client
+    if request.args.get("team_name") is None:
+        return jsonify(NO_TEAM_NAME_ERROR)
+    else:
+        # Normalize the requested team_name in case it contains 
+        # irregular characters/casing/etc.
+        team_name = str(request.args.get("team_name"))
+        team_name = normalize_team_name(team_name)
+        var = (team_name,)
+    if lang == "en":
+        query_string = """SELECT Surname, GivenName, `Title (EN)`, 
+                       `Telephone Number`, Email, `Street Address (EN)`, 
+                       `Country (EN)`, `Province (EN)`, `Postal Code`, `Organization Name (EN)` 
+                       FROM contacts WHERE `Organization Name (EN)` 
+                       = ?"""
+        return jsonify(search_contacts(cursor, var, query_string))
+    elif lang == "fr":
         # TODO: add this feature in French
         raise NotImplementedError
     else:
-        # TODO: write a custom exception for this
-        print("Can only pass 'en' or 'fr' as arguments")
+        # Return response code 400 + message
+        return jsonify(LANGUAGE_ERROR)
         
 if __name__ == "__main__":
     app.run()

@@ -114,20 +114,6 @@
 <script type="text/javascript" src="../javascripts/new_org_struc.json"></script>
 
 <script>
-document.getElementById("search-bar").addEventListener("keyup", function(event){
-// If user presses enter, then start by searching the org chart
-if (event.keyCode === 13) {
-  // TODO: Make the org chart reset with every search, so the user doesn't have to
-  // do this manually.
-  // Get the user's search term
-  searchTerm = document.getElementById("search-bar").value
-  expandToNode(searchTerm);
-  update(root);
-}
-});
-</script>
-
-<script>
 
 // ************** Generate the tree diagram  *****************
 var margin = {top: 20, right: 120, bottom: 20, left: 250},
@@ -314,9 +300,9 @@ function handleMouseOver(d, i) {  // Add interactivity
       // Update the content of the modal window
 	    d3.select("#but1").on("click", function(bu = businessUnit){
         $(".modal-header").html(bu)
-        // TODO: enter AJAX request to back-end here
+        // TODO: support language toggling
         var settings = {
-          "url": "/search-team?team_name=" + bu,
+          "url": "/search-team?team_name=" + bu + "&lang=en",
           "method": "GET",
         }
         console.log(settings);
@@ -331,7 +317,6 @@ function handleMouseOver(d, i) {  // Add interactivity
           }
           bodyHtml += "</div>"
           $(".modal-body").html(bodyHtml);
-          console.log(bodyHtml)
         });
       });
 }
@@ -423,7 +408,6 @@ function expandToNode(val) {
         console.log(currentNode);
         expandSingle(currentNode);
     }
-
 }
 
 // function to wrap text
@@ -452,7 +436,50 @@ function wrap(text, width) {
 }
 
 </script>
-
+<script>
+  document.getElementById("search-bar").addEventListener("keyup", function(event){
+  // If user presses enter, then start by searching the org chart
+  if (event.keyCode === 13) {
+    // TODO: Make the org chart reset with every search, so the user doesn't have to
+    // do this manually.
+    // Get the user's search term
+    searchTerm = document.getElementById("search-bar").value
+    // First check if this search term is found in the org chart tree.
+    var pathToNode = getPathToNode(searchTerm, treeData[0]);
+    // if length(pathToNode) == 0, then the search term was not found in the
+    // org chart. If this is the case, then search the contacts database to see if
+    // the user was searching for a specific person.
+    if (pathToNode.length > 0) {
+      expandToNode(searchTerm);
+      update(root);
+    } else {
+      console.log(searchTerm);
+      $(".modal-header").html("Search results for " + searchTerm);
+      // TODO: support language toggling
+      var settings = {
+          "url": "/search-person?person_name=" + searchTerm + "&lang=en",
+          "method": "GET",
+        }
+        console.log(settings);
+        $.ajax(settings).done(function (response) {
+          var contactsJson = JSON.parse(response.body);
+          console.log(contactsJson);
+          console.log(contactsJson.length);
+          var bodyHtml = "";
+          bodyHtml += "<div class='d-inline-flex p-2'>"
+          for(var i = 0; i < contactsJson.length; i++){
+            bodyHtml += generateBodyTemplate(contactsJson[i])
+          }
+          bodyHtml += "</div>"
+          console.log(bodyHtml);
+          $(".modal-body").html(bodyHtml);
+        });
+      $("#myModal").modal();
+    }
+    
+  }
+  });
+  </script>
 <!-- Modal -->
 <div class="modal fade" id="myModal" role="dialog">
   <div class="modal-dialog modal-lg">
