@@ -444,40 +444,49 @@ function wrap(text, width) {
     // do this manually.
     // Get the user's search term
     searchTerm = document.getElementById("search-bar").value
-    // First check if this search term is found in the org chart tree.
-    var pathToNode = getPathToNode(searchTerm, treeData[0]);
-    // if length(pathToNode) == 0, then the search term was not found in the
-    // org chart. If this is the case, then search the contacts database to see if
-    // the user was searching for a specific person.
-    if (pathToNode.length > 0) {
-      expandToNode(searchTerm);
-      update(root);
-    } else {
-      console.log(searchTerm);
-      $(".modal-header").html("Search results for " + searchTerm);
-      // TODO: support language toggling
-      var settings = {
-          "url": "/search-person?person_name=" + searchTerm + "&lang=en",
+
+    // First, try to search org chart by pinging search-org-chart endpoint
+    var settings = {
+          "url": "/search-org-chart?team_name=" + searchTerm + "&lang=en",
           "method": "GET",
         }
-        console.log(settings);
-        $.ajax(settings).done(function (response) {
-          var contactsJson = JSON.parse(response.body);
-          console.log(contactsJson);
-          console.log(contactsJson.length);
-          var bodyHtml = "";
-          bodyHtml += "<div class='d-inline-flex p-2'>"
-          for(var i = 0; i < contactsJson.length; i++){
-            bodyHtml += generateBodyTemplate(contactsJson[i])
-          }
-          bodyHtml += "</div>"
-          console.log(bodyHtml);
-          $(".modal-body").html(bodyHtml);
-        });
-      $("#myModal").modal();
+    $.ajax(settings).done(function (response) {
+      var searchTermClean = JSON.parse(response.body);
+      console.log("FIRST THING TO CHECK:");
+      console.log(searchTermClean);
+      // If searchTerm.length == 1, then search the org chart for the name.
+      if (searchTermClean.length >= 1) {
+        console.log("LENGTH IS ONE!");
+        expandToNode(searchTermClean[0]);
+        update(root);
+      }
+      // Otherwise see if the user is trying to search for a specific person.
+      else {
+        console.log("LENGTH IS ZERO")
+        console.log("SEARCH TERM IS: ", searchTerm);
+        $(".modal-header").html("Search results for " + searchTerm);
+        // TODO: support language toggling
+          var settings = {
+              "url": "/search-person?person_name=" + searchTerm + "&lang=en",
+              "method": "GET",
+            }
+            $.ajax(settings).done(function (response) {
+              var contactsJson = JSON.parse(response.body);
+              console.log(contactsJson);
+              console.log(contactsJson.length);
+              var bodyHtml = "";
+              bodyHtml += "<div class='d-inline-flex p-2'>"
+              for(var i = 0; i < contactsJson.length; i++){
+                bodyHtml += generateBodyTemplate(contactsJson[i])
+              }
+              bodyHtml += "</div>"
+              console.log(bodyHtml);
+              $(".modal-body").html(bodyHtml);
+            });
+          $("#myModal").modal();
+        }
+      });
     }
-    
-  }
   });
   </script>
 <!-- Modal -->

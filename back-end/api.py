@@ -13,7 +13,9 @@ from flask import Flask, jsonify, request
 import pandas as pd
 
 from config import CONFIG
-from search import search_contacts, search_org_chart
+from search import (search_contacts,
+                    search_org_chart, 
+                    search_org_name)
 from response_templates import (LANGUAGE_ERROR, 
                                NO_TEAM_NAME_ERROR, 
                                NO_LANG_ERROR,
@@ -30,7 +32,7 @@ def test():
     return "hello world!"
 
 @app.route('/search-org-chart', methods=["GET"])
-def search_org_chart():
+def get_org_chart():
     '''
     Recursively searches the tree containing the organizational chart;
     if the business unit is found, then returns the path to the business unit.
@@ -66,7 +68,13 @@ def search_org_chart():
         # First, lookup `Organization Name (EN)` from OrgNameCleanEN
         query_string = """SELECT `Organization Name (EN)`
                        FROM contacts WHERE OrgNameCleanEN = ?"""
-        return jsonify(search_contacts(cursor, var, query_string))
+        org_name_clean = search_org_name(cursor, var, query_string)
+        print("ORG NAME IS ", org_name_clean)
+        print(type(org_name_clean))
+        sys.stdout.flush()
+        # TODO: Might want to make this return something more standard
+        # for downstream API calls. For now just return cleaned name.
+        return jsonify(org_name_clean)
     elif lang == "fr":
         # TODO: add this feature in French
         raise NotImplementedError
@@ -111,6 +119,8 @@ def get_person():
     # Open sqlite db connection
     conn = sqlite3.connect(CONFIG["db-path"])
     cursor = conn.cursor()
+    print("Got here")
+    sys.stdout.flush()
     # If the lang parameter was not specified, return error to the client
     if request.args.get("lang") is None:
         return jsonify(NO_LANG_ERROR)
@@ -126,6 +136,8 @@ def get_person():
         person_name = str(request.args.get("person_name"))
         person_name = normalize_person_name(person_name)
         var = (person_name,)
+        print(var)
+        sys.stdout.flush()
     if lang == "en":
         query_string = """SELECT Surname, GivenName, `Title (EN)`, 
                        `Telephone Number`, Email, `Street Address (EN)`, 
@@ -174,7 +186,7 @@ def get_team():
         # Normalize the requested team_name in case it contains 
         # irregular characters/casing/etc.
         team_name = str(request.args.get("team_name"))
-        team_name = normalize_team_name(team_name)
+        #team_name = normalize_team_name(team_name)
         var = (team_name,)
     if lang == "en":
         query_string = """SELECT Surname, GivenName, `Title (EN)`, 

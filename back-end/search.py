@@ -5,6 +5,37 @@ Created on Mon Aug 12 21:40 2019
 '''
 from response_templates import NO_RESULTS_FOUND
 
+def search_org_name(cursor, var, query_string):
+    '''
+    Searches a database pointed to by `cursor` for `query_string`.
+    The purpose of this function is to return the value of an 
+    organization name as it is stored in the org chart JSON file
+    given a normalized search term.
+
+    Args:
+        cursor:
+            An instance of <class 'sqlite3.Cursor'> that is connected to
+            acronyms.db
+        var:
+            A tuple of length 1 that contains the team name to be searched.
+            E.g. ('Chief Data Office',)
+        query_string:
+            A string that represents a valid SQL query to either the
+            acronyms_en or acronyms_fr tables of the acronyms database.
+    
+    Returns:
+        org_name:
+            A string that contains the organization name as it is stored in
+            the org chart JSON file.
+    '''
+    json_response = []
+    for row in cursor.execute(query_string, var):
+        if row is None:
+            break
+        else:
+            json_response.append(row[0])
+    return json_response
+
 def search_contacts(cursor, var, query_string):
     '''
     Searches a database pointed to by `cursor` for `query_string`.
@@ -50,7 +81,7 @@ def search_contacts(cursor, var, query_string):
     else:
         return json_response
 
-def search_org_chart(org_chart, org_name):
+def search_org_chart(org_name, org_chart):
     '''
     Searches a JSON (loaded in memory as a python dict) for a specific
     business unit.

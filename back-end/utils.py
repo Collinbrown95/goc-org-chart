@@ -262,17 +262,16 @@ def normalize_team_name(team_name):
         team_name:
 
     '''
+    team_name = str(team_name)
+    team_name = team_name.lower()
+    team_name = team_name.replace(',', ' ')
+    team_name = team_name.replace('/', ' ')
+    team_name = team_name.replace('.', ' ')
+    team_name = team_name.replace('-', ' ')
+    team_name = team_name.replace('&', ' and ')
+    team_name = team_name.replace(' +', ' ')
+    team_name = team_name.strip()
     return team_name
-    # team_name = str(team_name)
-    # team_name = team_name.lower()
-    # team_name = team_name.replace(',', ' ')
-    # team_name = team_name.replace('/', ' ')
-    # team_name = team_name.replace('.', ' ')
-    # team_name = team_name.replace('-', ' ')
-    # team_name = team_name.replace('&', ' and ')
-    # team_name = team_name.replace(' +', ' ')
-    # team_name = team_name.strip()
-    # return team_name
 
 def normalize_person_name(person_name):
     '''
@@ -281,7 +280,7 @@ def normalize_person_name(person_name):
 
     Specifically:
         1. all characters are converted to lowercase
-        2. replace ,. characters with a blank space
+        2. replace ,.- characters with a blank space
         4. any occurence of two spaces should be replaced with a single space
         5. the text should be stripped of trailing spaces/characters on either side
 
@@ -296,6 +295,7 @@ def normalize_person_name(person_name):
     person_name = person_name.lower()
     person_name = person_name.replace(","," ")
     person_name = person_name.replace("."," ")
+    person_name = person_name.replace("-"," ")
     # Replace one or more spaces with one space
     person_name = person_name.replace(" +"," ")
     person_name = person_name.strip()
