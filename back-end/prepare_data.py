@@ -8,7 +8,7 @@ GEDS data from open.canada.ca/data, preprocess it into (i) a table that maps
 names to business units and (ii) a JSON object that contains the organization
 chart.
 '''
-
+import os
 from utils import fetch_geds, get_org_chart, preprocess_geds
 
 from config import CONFIG
@@ -53,7 +53,13 @@ if __name__ == "__main__":
     # the table already exists, replace it (i.e. drop the table before
     # inserting new rows)
     df.to_sql('contacts', con=conn, if_exists="replace")
-    df.to_csv(CONFIG["df-path"])
+    df.to_csv(os.path.join(CONFIG["df-path"], "contacts.csv"))
+    # Now setup dataframe of unique organization names to map normalized name
+    # to name contained in org chart
+    unique_df_en = df.drop_duplicates(subset="Organization Structure (EN)", keep="first")
+    unique_df_fr = df.drop_duplicates(subset="Organization Structure (FR)", keep="first")
+    unique_df_en.to_sql('unique_org_name_en', con=conn, if_exists="replace")
+    unique_df_fr.to_sql('unique_org_name_fr', con=conn, if_exists="replace")
     # Write the org chart to disk as JSON
     import json
     with open (CONFIG["org-chart-path"], 'w') as f:
